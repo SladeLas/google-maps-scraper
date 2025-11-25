@@ -45,12 +45,20 @@ curl -X GET "http://localhost:8001/scrape" \
 
 ### GET Example
 ```bash
-curl "http://localhost:8001/scrape-get?query=hotels%20in%2098392&max_places=10&lang=en&headless=true"
+curl \
+  "http://localhost:8001/scrape-get?query=hotels%20in%2098392" \
+  "&max_places=10" \
+  "&lang=en" \
+  "&headless=true"
 ```
 or
 
 ```bash
-curl "http://gmaps_scraper_api_service:8001/scrape-get?query=hotels%20in%2098392&max_places=10&lang=en&headless=true"
+curl \
+  "http://gmaps_scraper_api_service:8001/scrape-get?query=hotels%20in%2098392" \
+  "&max_places=10" \
+  "&lang=en" \
+  "&headless=true"
 ```
 
 

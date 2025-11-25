@@ -1,3 +1,5 @@
+"""Packaging configuration for the Google Maps scraper server."""
+
 from setuptools import setup, find_packages
 
 setup(

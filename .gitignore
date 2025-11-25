@@ -1,0 +1,56 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+eggs/
+wheels/
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+.cache/
+htmlcov/
+.tox/
+.nox/
+.pytype/
+.pyre/
+dmypy.json
+.dmypy.json
+
+# Logs
+*.log
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE/editor settings
+.vscode/
+.idea/
+.ropeproject
+.spyderproject
+.spyproject
+
+# Misc
+.python-version
+__pypackages__/
+.ipynb_checkpoints
+
+

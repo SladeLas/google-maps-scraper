@@ -1,1 +1,1 @@
-# Initialize the gmaps_scraper_server package
+"""Package entry for the Google Maps scraping server components."""

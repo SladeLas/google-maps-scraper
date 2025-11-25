@@ -1,3 +1,5 @@
+"""Utility helpers for parsing Google Maps HTML into structured data."""
+
 import json
 import re
 
@@ -25,7 +27,7 @@ def safe_get(data, *keys):
                 # print(f"Cannot access key {key} on non-dict/list item: {type(current)}")
                 return None
         except (IndexError, TypeError, KeyError) as e:
-            # print(f"Error accessing key {key}: {e}")
+            print(f"Error accessing key {key}: {e}")
             return None
     return current
 
@@ -34,7 +36,11 @@ def extract_initial_json(html_content):
     Extracts the JSON string assigned to window.APP_INITIALIZATION_STATE from HTML content.
     """
     try:
-        match = re.search(r';window\.APP_INITIALIZATION_STATE\s*=\s*(.*?);window\.APP_FLAGS', html_content, re.DOTALL)
+        match = re.search(
+            r";window\.APP_INITIALIZATION_STATE\s*=\s*(.*?);window\.APP_FLAGS",
+            html_content,
+            re.DOTALL,
+        )
         if match:
             json_str = match.group(1)
             if json_str.strip().startswith(('[', '{')):
@@ -45,7 +51,7 @@ def extract_initial_json(html_content):
         else:
             print("APP_INITIALIZATION_STATE pattern not found.")
             return None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except
         print(f"Error extracting JSON string: {e}")
         return None
 
@@ -60,61 +66,82 @@ def parse_json_data(json_str):
         initial_data = json.loads(json_str)
 
         # Check the initial heuristic path [3][6]
-        if isinstance(initial_data, list) and len(initial_data) > 3 and isinstance(initial_data[3], list) and len(initial_data[3]) > 6:
-             data_blob_or_str = initial_data[3][6]
+        if (
+            isinstance(initial_data, list)
+            and len(initial_data) > 3
+            and isinstance(initial_data[3], list)
+            and len(initial_data[3]) > 6
+        ):
+            data_blob_or_str = initial_data[3][6]
 
-             # Case 1: It's already the list we expect (older format?)
-             if isinstance(data_blob_or_str, list):
-                 print("Found expected list structure directly at initial_data[3][6].")
-                 return data_blob_or_str
+            # Case 1: It's already the list we expect (older format?)
+            if isinstance(data_blob_or_str, list):
+                print("Found expected list structure directly at initial_data[3][6].")
+                return data_blob_or_str
 
-             # Case 2: It's the string containing the actual JSON
-             elif isinstance(data_blob_or_str, str) and data_blob_or_str.startswith(")]}'\n"):
-                 print("Found string at initial_data[3][6], attempting to parse inner JSON.")
-                 try:
-                     json_str_inner = data_blob_or_str.split(")]}'\n", 1)[1]
-                     actual_data = json.loads(json_str_inner)
+            # Case 2: It's the string containing the actual JSON
+            elif isinstance(data_blob_or_str, str) and data_blob_or_str.startswith(
+                ")]}'\n"
+            ):
+                print(
+                    "Found string at initial_data[3][6], attempting to parse inner JSON."
+                )
+                try:
+                    json_str_inner = data_blob_or_str.split(")]}'\n", 1)[1]
+                    actual_data = json.loads(json_str_inner)
 
-                     # Check if the parsed inner data is a list and has the expected sub-structure at index 6
-                     if isinstance(actual_data, list) and len(actual_data) > 6:
-                          potential_data_blob = safe_get(actual_data, 6)
-                          if isinstance(potential_data_blob, list):
-                              print("Returning data blob found at actual_data[6].")
-                              return potential_data_blob # This is the main data structure
-                          else:
-                              print(f"Data at actual_data[6] is not a list, but {type(potential_data_blob)}.")
-                              return None # Structure mismatch within inner data
-                     else:
-                         print(f"Parsed inner JSON is not a list or too short (len <= 6), type: {type(actual_data)}.")
-                         return None # Inner JSON structure not as expected
+                    # Check if the parsed inner data is a list
+                    # and has the expected sub-structure at index 6
+                    if isinstance(actual_data, list) and len(actual_data) > 6:
+                        potential_data_blob = safe_get(actual_data, 6)
+                        if isinstance(potential_data_blob, list):
+                            print("Returning data blob found at actual_data[6].")
+                            return potential_data_blob  # This is the main data structure
+                        else:
+                            print(
+                                "Data at actual_data[6] is not a list, "
+                                f"but {type(potential_data_blob)}."
+                            )
+                            return None  # Structure mismatch within inner data
+                    else:
+                        print(
+                            "Parsed inner JSON is not a list or too short (len <= 6), "
+                            f"type: {type(actual_data)}."
+                        )
+                        return None  # Inner JSON structure not as expected
 
-                 except json.JSONDecodeError as e_inner:
-                     print(f"Error decoding inner JSON string: {e_inner}")
-                     return None
-                 except Exception as e_inner_general:
-                     print(f"Unexpected error processing inner JSON string: {e_inner_general}")
-                     return None
+                except json.JSONDecodeError as e_inner:
+                    print(f"Error decoding inner JSON string: {e_inner}")
+                    return None
+                except Exception as e_inner_general:  # noqa: BLE001  # pylint: disable=broad-except
+                    print(f"Unexpected error processing inner JSON string: {e_inner_general}")
+                    return None
 
-             # Case 3: Data at [3][6] is neither a list nor the expected string
-             else:
-                 print(f"Parsed JSON structure unexpected at [3][6]. Expected list or prefixed JSON string, got {type(data_blob_or_str)}.")
-                 return None # Unexpected structure at [3][6]
+            # Case 3: Data at [3][6] is neither a list nor the expected string
+            else:
+                print(
+                    "Parsed JSON structure unexpected at [3][6]. Expected list "
+                    f"or prefixed JSON string, got {type(data_blob_or_str)}."
+                )
+                return None  # Unexpected structure at [3][6]
 
         # Case 4: Initial path [3][6] itself wasn't valid
         else:
-            print(f"Initial JSON structure not as expected (list[3][6] path not valid). Type: {type(initial_data)}")
+            print(
+                "Initial JSON structure not as expected (list[3][6] path not valid). "
+                f"Type: {type(initial_data)}"
+            )
             return None # Initial structure invalid
 
     except json.JSONDecodeError as e:
         print(f"Error decoding initial JSON: {e}")
         return None
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except
         print(f"Unexpected error parsing JSON data: {e}")
         return None
 
 
 # --- Field Extraction Functions (Indices relative to the data_blob returned by parse_json_data) ---
-
 def get_main_name(data):
     """Extracts the main name of the place."""
     # Index relative to the data_blob returned by parse_json_data
@@ -179,7 +206,7 @@ def _find_phone_recursively(data_structure):
 
     elif isinstance(data_structure, dict):
         # Recurse into dictionary values
-        for key, value in data_structure.items():
+        for value in data_structure.values():
             found_phone = _find_phone_recursively(value)
             if found_phone:
                 return found_phone
@@ -211,7 +238,8 @@ def get_thumbnail(data):
     # We need to find the thumbnail within the new structure from debug_inner_data.json
     # For now, returning None until verified.
     # return safe_get(data, 72, 0, 1, 6, 0) # Placeholder index - LIKELY WRONG
-    # Tentative guess based on debug_inner_data structure (might be in a sublist like [14][0][0][6][0]?)
+    # Tentative guess based on debug_inner_data'
+    # Structure (might be in a sublist like [14][0][0][6][0]?)
     return safe_get(data, 14, 0, 0, 6, 0) # Tentative guess
 
 # Add more extraction functions here as needed, using the indices
@@ -268,5 +296,5 @@ if __name__ == '__main__':
 
     except FileNotFoundError:
         print("Sample HTML file 'sample_place.html' not found. Cannot run example.")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except
         print(f"An error occurred during example execution: {e}")
