@@ -1,0 +1,35 @@
+[project]
+name = "slade-digital-scrapers"
+version = "0.1.0"
+description = "Async Google Maps and LinkedIn scraping API and tooling."
+readme = "README.md"
+authors = [{ name = "Slade Laskowski" }]
+requires-python = ">=3.10"
+dependencies = [
+    "playwright",
+    "fastapi",
+    "uvicorn[standard]",
+    "psycopg2-binary",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[tool.poetry]
+name = "slade_digital_scrapers"
+version = "0.1.0"
+description = "Async Google Maps and LinkedIn scraping API and tooling."
+authors = ["Slade Laskowski"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+playwright = "*"
+fastapi = "*"
+uvicorn = { version = "*", extras = ["standard"] }
+psycopg2-binary = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+ruff = "*"
+

@@ -1,7 +1,7 @@
 '''Creates database'''
 
 import psycopg2
-from dustly.core.config import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT
+from slade_digital_scrapers.core.config import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT
 
 def test_connection():
     """
@@ -50,7 +50,7 @@ def create_tables():
         ),
 
         ('entities', """
-         CREATE TABLE IF NOT EXISTS scrape_history (
+         CREATE TABLE IF NOT EXISTS entities (
                 id BIGSERIAL PRIMARY KEY,
                 name TEXT,
                 place_id TEXT,
@@ -66,7 +66,7 @@ def create_tables():
          """),
 
         ('contacts', """
-        CREATE TABLE IF NOT EXISTS scrape_history (
+        CREATE TABLE IF NOT EXISTS contacts (
             id BIGSERIAL PRIMARY KEY,
             entity_id INT,
             first_name TEXT,
@@ -77,7 +77,8 @@ def create_tables():
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             
             FOREIGN KEY (entity_id) REFERENCES entities(id)
-            """
+        );
+        """
         )
     ]
 
@@ -95,7 +96,11 @@ def create_tables():
         for table_name, command in tables:
             # Check if the table exists in the public schema.
             cursor.execute(
-                "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = %s)",
+                """SELECT EXISTS 
+                (SELECT 1 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = %s
+                )""",
                 (table_name,)
             )
             exists_result = cursor.fetchone()

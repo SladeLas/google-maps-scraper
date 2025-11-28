@@ -3,7 +3,7 @@
 import contextlib
 from functools import lru_cache
 from psycopg2.pool import SimpleConnectionPool
-from dustly.core.config import DB_URI
+from src.core.config import DB_URI
 
 @lru_cache(maxsize=1)
 def get_pool(dsn: str | None = None, maxconn: int | None = None) -> SimpleConnectionPool:

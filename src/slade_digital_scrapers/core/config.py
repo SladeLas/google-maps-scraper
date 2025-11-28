@@ -1,4 +1,4 @@
-"""Configuration settings for the Dustly application."""
+"""Configuration settings for the SD Scraping application."""
 from environs import Env
 
 env = Env()
