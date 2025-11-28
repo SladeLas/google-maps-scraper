@@ -84,26 +84,80 @@ async def scrape_google_maps(query, max_places=None, lang="en", headless=True):
                     "//button[.//span[contains(text(), 'Accept all') "
                     "or contains(text(), 'Reject all')]]"
                 )
-                # Wait briefly for the button to potentially appear
-                await page.wait_for_selector(
-                    consent_button_xpath,
-                    state="visible",
-                    timeout=5000,
-                )
-                # Click the "Accept all" or equivalent button if found
-                # Example: Prioritize "Accept all"
-                accept_button = await page.query_selector(
-                    "//button[.//span[contains(text(), 'Accept all')]]"
-                )
-                if accept_button:
-                    print("Accepting consent form...")
-                    await accept_button.click() # Added await
+                # Additional consent input xpath (for input elements, not buttons)
+                consent_input_xpath = "/html/body/div/div[2]/div[1]/div[3]/form[2]/input[15]"
+                
+                consent_clicked = False
+                
+                # Method 1: Try to find input[type="submit"] with value="Accept all"
+                try:
+                    accept_input_xpath = '//input[@type="submit" and @value="Accept all"]'
+                    await page.wait_for_selector(
+                        accept_input_xpath,
+                        state="visible",
+                        timeout=3000,
+                    )
+                    accept_input = await page.query_selector(accept_input_xpath)
+                    if accept_input:
+                        print("Accepting consent form (input submit Accept all)...")
+                        await accept_input.click()
+                        consent_clicked = True
+                except PlaywrightTimeoutError:
+                    pass
+                
+                # Method 2: Try to find button with "Accept all" text (span inside button)
+                if not consent_clicked:
+                    try:
+                        await page.wait_for_selector(
+                            "//button[.//span[contains(text(), 'Accept all')]]",
+                            state="visible",
+                            timeout=3000,
+                        )
+                        accept_button = await page.query_selector(
+                            "//button[.//span[contains(text(), 'Accept all')]]"
+                        )
+                        if accept_button:
+                            print("Accepting consent form (Accept all button)...")
+                            await accept_button.click()
+                            consent_clicked = True
+                    except PlaywrightTimeoutError:
+                        pass
+                
+                # Method 3: Try the specific input element xpath you provided
+                if not consent_clicked:
+                    try:
+                        await page.wait_for_selector(
+                            consent_input_xpath,
+                            state="visible",
+                            timeout=3000,
+                        )
+                        consent_input = await page.query_selector(consent_input_xpath)
+                        if consent_input:
+                            print("Accepting consent form (input element)...")
+                            await consent_input.click()
+                            consent_clicked = True
+                    except PlaywrightTimeoutError:
+                        pass
+                
+                # Method 4: Fallback to generic consent button (might be reject)
+                if not consent_clicked:
+                    try:
+                        await page.wait_for_selector(
+                            consent_button_xpath,
+                            state="visible",
+                            timeout=3000,
+                        )
+                        print("Clicking first available consent button...")
+                        await page.locator(consent_button_xpath).first.click()
+                        consent_clicked = True
+                    except PlaywrightTimeoutError:
+                        pass
+                
+                if consent_clicked:
+                    # Wait for navigation/popup closure
+                    await page.wait_for_load_state("networkidle", timeout=5000)
                 else:
-                    # Fallback to clicking the first consent button found (might be reject)
-                    print("Clicking first available consent button...")
-                    await page.locator(consent_button_xpath).first.click()
-                # Wait for navigation/popup closure
-                await page.wait_for_load_state("networkidle", timeout=5000)
+                    print("No consent form detected after trying all methods.")
             except PlaywrightTimeoutError:
                 print("No consent form detected or timed out waiting.")
             except Exception as e:  # noqa: BLE001  # pylint: disable=broad-except

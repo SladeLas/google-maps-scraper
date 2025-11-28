@@ -44,6 +44,7 @@ def create_tables():
                 source TEXT NOT NULL UNIQUE,
                 search_key TEXT,
                 location_key TEXT,
+                results_scraped INT,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             );
             """
@@ -53,7 +54,7 @@ def create_tables():
          CREATE TABLE IF NOT EXISTS entities (
                 id BIGSERIAL PRIMARY KEY,
                 name TEXT,
-                place_id TEXT,
+                place_id TEXT UNIQUE,
                 address TEXT,
                 google_rating INT,
                 review_count INT,
@@ -112,12 +113,53 @@ def create_tables():
                 cursor.execute(command)
                 print(f"Executed creation command for table '{table_name}':\n{command}")
 
+        # Ensure unique constraints exist
+        _ensure_constraints(cursor)
+        
         cursor.close()
         connection.close()
         print("Tables checked/created successfully.")
 
     except (psycopg2.Error, ValueError) as error:
         print("Error creating tables:", error)
+
+
+def _ensure_constraints(cursor):
+    """Ensure unique constraints exist on required columns."""
+    constraints = [
+        {
+            "table": "entities",
+            "column": "place_id",
+            "constraint_name": "entities_place_id_key",
+            "sql": "ALTER TABLE entities ADD CONSTRAINT entities_place_id_key UNIQUE (place_id);"
+        },
+    ]
+    
+    for constraint in constraints:
+        try:
+            # Check if constraint already exists
+            cursor.execute(
+                """
+                SELECT EXISTS (
+                    SELECT 1 
+                    FROM pg_constraint 
+                    WHERE conname = %s
+                )
+                """,
+                (constraint["constraint_name"],)
+            )
+            exists = cursor.fetchone()[0]
+            
+            if not exists:
+                cursor.execute(constraint["sql"])
+                print(f"Added unique constraint '{constraint['constraint_name']}' to {constraint['table']}.{constraint['column']}")
+            else:
+                print(f"Constraint '{constraint['constraint_name']}' already exists on {constraint['table']}.{constraint['column']}")
+        except psycopg2.Error as e:
+            # Constraint might already exist or table might not exist yet
+            if "already exists" not in str(e).lower():
+                print(f"Warning: Could not add constraint '{constraint['constraint_name']}': {e}")
+
 
 if __name__ == '__main__':
     if test_connection():
