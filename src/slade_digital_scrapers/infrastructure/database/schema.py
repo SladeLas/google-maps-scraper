@@ -79,8 +79,21 @@ def create_tables():
             
             FOREIGN KEY (entity_id) REFERENCES entities(id)
         );
-        """
-        )
+        """),
+        ('jobs', """
+        CREATE TABLE IF NOT EXISTS jobs (
+            id BIGSERIAL PRIMARY KEY,
+            linkedin_url TEXT,
+            job_title TEXT,
+            company TEXT,
+            company_linkedin_url TEXT,
+            location TEXT,
+            posted_date DATE,
+            application_count INT,
+            job_description TEXT,
+            benefits TEXT
+        );
+        """),
     ]
 
     try:
