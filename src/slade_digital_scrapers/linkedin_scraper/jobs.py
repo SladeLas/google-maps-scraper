@@ -2,11 +2,8 @@
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 from .objects import Scraper
-
 
 class Job(Scraper):
     """Rich representation of a job posting with scraping helpers."""
@@ -52,7 +49,7 @@ class Job(Scraper):
         if self.is_signed_in():
             self.scrape_logged_in(close_on_complete=close_on_complete)
         else:
-            raise NotImplemented("This part is not implemented yet")
+            raise NotImplementedError("This part is not implemented yet")
 
     def to_dict(self):
         """Return a serialisable snapshot of the job fields."""
