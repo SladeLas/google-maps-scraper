@@ -1,1 +1,1 @@
-"""Package entry for the Google Maps scraping server components."""
+"""LinkedIn scraping helpers for company, people, and job data."""

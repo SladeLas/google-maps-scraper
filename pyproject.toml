@@ -10,6 +10,7 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "psycopg2-binary",
+    "lxml",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,8 @@ playwright = "*"
 fastapi = "*"
 uvicorn = { version = "*", extras = ["standard"] }
 psycopg2-binary = "*"
+selenium = "^4.38.0"
+lxml = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
