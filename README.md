@@ -1,93 +1,44 @@
 # Google Maps Scraper API
 
-A FastAPI service for scraping Google Maps data based on search queries. Ideal for n8n users.
+A FastAPI service for scraping Google Maps results with Playwright. Built to be called from automation tools like ToolJet or n8n.
 
-Very high performance, watch out for rate limiting!
+## API
+- `GET|POST /google_maps/scrape` — query Google Maps. Query params: `query` (required), `max_places` (optional int), `lang` (default `en`), `headless` (default `true`).
+- `GET /` and `GET /health` — basic health checks.
 
-Use variables to replace URL parameters
+## Environment
+Set these in `.env` (see `.env.example`):
+- `PORT` — API port (default `8001`).
+- `ALLOWED_ORIGINS` — comma-separated origins for CORS (set your ToolJet URL).
+- Database: either `DB_URI` or `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+- `ENVIRONMENT`, `LOG_LEVEL` (optional).
 
-scrape-get?query=hotels%20in%2098392&max_places=100&lang=en&headless=true"
-
-If using n8n or other automation, use the /scrape-get endpoint for it to return results
-
-simple install, copy files and run docker compose up -d
-
-Intened to be used with this n8n build: 
-https://github.com/conor-is-my-name/n8n-autoscaling 
-
-## API Endpoints
-
-**Parameters:**
-- `query` (required): Search query (e.g., "hotels in 98392")
-- `max_places` (optional): Maximum number of results to return
-- `lang` (optional, default "en"): Language code for results
-- `headless` (optional, default true): Run browser in headless mode
-
-### GET `/scrape-get`
-Alternative GET endpoint with same functionality
-
-### GET `/`
-Health check endpoint
-
-## Example Requests
-
-### GET Example
+## Local development
 ```bash
-curl -X GET "http://localhost:8001/scrape" \
--H "Content-Type: application/json" \
--d '{
-  "query": "hotels in 98392",
-  "max_places": 10,
-  "lang": "en",
-  "headless": true
-}'
+poetry install
+poetry run playwright install chromium
+poetry run uvicorn slade_digital_scrapers.infrastructure.api.api:app --reload --port 8001
 ```
+API docs available at `http://localhost:8001/docs`.
 
-### GET Example
+## Docker / production
 ```bash
-curl \
-  "http://localhost:8001/scrape-get?query=hotels%20in%2098392" \
-  "&max_places=10" \
-  "&lang=en" \
-  "&headless=true"
+cp .env.example .env   # update values for your server/ToolJet origin and database
+docker network create shark # or change the network name in docker-compose.yml
+docker compose up --build -d
+curl http://localhost:8001/health
 ```
-or
+The compose file maps `${PORT:-8001}` on the host to the same port in the container. The image installs Playwright Chromium and required system deps.
 
-```bash
-curl \
-  "http://gmaps_scraper_api_service:8001/scrape-get?query=hotels%20in%2098392" \
-  "&max_places=10" \
-  "&lang=en" \
-  "&headless=true"
-```
-
-
-## Running the Service
-
-### Docker
-```bash
-docker-compose up --build
-```
-
-### Local Development
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-2. Run the API:
-```bash
-uvicorn gmaps_scraper_server.main_api:app --reload
-```
-
-
-The API will be available at `http://localhost:8001`
-
-or for docker:
-
-`http://gmaps_scraper_api_service:8001`
+## ToolJet usage
+1. Add a REST API data source with base URL `http(s)://<server>:<PORT>`.
+2. Enable CORS by setting `ALLOWED_ORIGINS` in `.env` to your ToolJet URL if the request is browser-initiated.
+3. Create a query that calls `GET /google_maps/scrape` with query params, e.g.:
+   - `query=hotels in Seattle`
+   - `max_places=25`
+   - `lang=en`
+4. Bind the returned list to your table/list components.
 
 ## Notes
-- For production use, consider adding authentication
-- The scraping process may take several seconds to minutes depending on the number of results
-- Results format depends on the underlying scraper implementation
+- Playwright can be rate-limited by Google; tune `max_places` or add delays if needed.
+- For production, put this behind a reverse proxy (NGINX/Caddy) and add authentication if exposing publicly.

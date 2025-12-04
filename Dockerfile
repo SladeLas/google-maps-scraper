@@ -1,18 +1,14 @@
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
+FROM python:3.14-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
 
-# Set work directory
 WORKDIR /app
 
-# Install system dependencies required by Playwright's browsers
-# Using the combined command to install dependencies for all browsers
+# Install system dependencies required by Playwright's Chromium
 # See: https://playwright.dev/docs/docker#install-system-dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # --- Playwright dependencies ---
     libnss3 \
     libnspr4 \
     libdbus-1-3 \
@@ -29,30 +25,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     libasound2 \
-    # --- Other useful packages ---
-    curl \
-    # --- Cleanup ---
-    && apt-get purge -y --auto-remove \
-    -o APT::AutoRemove::RecommendsImportant=false \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy the requirements file into the container at /app
-COPY requirements.txt setup.py ./
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir poetry
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install -e . --no-deps
+COPY pyproject.toml poetry.lock ./
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --without dev
 
-# Install Playwright browsers
-# This command downloads the browser binaries into the image
-RUN playwright install --with-deps
-
-# Copy the rest of the application code into the container at /app
 COPY . .
 
-# Expose the port the app runs on
+# Install Playwright Chromium inside the image
+RUN playwright install --with-deps chromium
+
 EXPOSE 8001
 
-# Define the command to run the application
-# Use 0.0.0.0 to make it accessible from outside the container
-CMD ["uvicorn", "gmaps_scraper_server.main_api:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["sh", "-c", "uvicorn slade_digital_scrapers.infrastructure.api.api:app --host 0.0.0.0 --port ${PORT:-8001} --proxy-headers"]

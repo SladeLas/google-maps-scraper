@@ -5,6 +5,11 @@ import asyncio
 import concurrent.futures
 from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from slade_digital_scrapers.core.config import (
+    ALLOWED_ORIGINS,
+    LOG_LEVEL,
+)
 from slade_digital_scrapers.infrastructure.models.entities.repository import (
     upsert_entities,
 )
@@ -30,7 +35,7 @@ except ImportError:
 
 # Configure basic logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
     format="%(asctime)s - %(levelname)s - %(message)s",
 )
 
@@ -38,6 +43,15 @@ app = FastAPI(
     title="Slade Digital Scrapers",
     description="API to trigger Google Maps scraping based on a query.",
     version="0.1.0",
+)
+
+# Enable CORS so ToolJet/other clients can call the API from a browser.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS or ["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Thread pool for running blocking database operations
@@ -61,11 +75,12 @@ async def health_check():
     """Health check endpoint for monitoring."""
     return {"status": "healthy", "service": "Google Maps Scraper API"}
 
-@app.post(
+@app.api_route(
     "/google_maps/scrape",
-    response_model=List[Dict[str, Any]]
+    methods=["GET", "POST"],
+    response_model=List[Dict[str, Any]],
 )
-async def run_scrape(
+async def run_scrape(  # type: ignore[override]
     query: str = Query(
         ...,
         description="The search query for GMaps "
@@ -196,4 +211,3 @@ async def run_scrape(
 # if __name__ == "__main__":
 #     import uvicorn
 #     uvicorn.run(app, host="0.0.0.0", port=8001)
-
