@@ -59,17 +59,6 @@ executor = concurrent.futures.ThreadPoolExecutor(
     max_workers=4
 )
 
-# Basic root endpoint for health check or info
-@app.get("/")
-async def read_root():
-    """API Root"""
-    return {"message": "Google Maps Scraper API is running."}
-
-@app.get("/google_maps/")
-async def read_google_maps_root():
-    """Google Maps API Root"""
-    return {"message": "Google Maps Scraper API is running."}
-
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
