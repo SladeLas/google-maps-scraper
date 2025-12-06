@@ -8,6 +8,7 @@ ENVIRONMENT = env.str("ENVIRONMENT", "development")
 LOG_LEVEL = env.str("LOG_LEVEL", "INFO")
 API_VERSION = "v1"
 PORT = env.int("PORT", 8001)
+API_KEY = env.str("API_KEY", "")
 
 # Database
 DB_URL = env.str("DB_URL", "postgresql://dustly:password@localhost/dustly")

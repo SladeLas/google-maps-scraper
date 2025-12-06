@@ -4,11 +4,12 @@ import logging
 import asyncio
 import concurrent.futures
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from slade_digital_scrapers.core.config import (
     ALLOWED_ORIGINS,
     LOG_LEVEL,
+    API_KEY,
 )
 from slade_digital_scrapers.infrastructure.models.entities.repository import (
     upsert_entities,
@@ -59,6 +60,13 @@ executor = concurrent.futures.ThreadPoolExecutor(
     max_workers=4
 )
 
+async def require_api_key(x_api_key: str = Header(default="", convert_underscores=False)) -> None:
+    """Simple header-based auth for the API."""
+    if API_KEY and x_api_key == API_KEY:
+        return
+    # If API_KEY is unset, deny by default to avoid accidental open exposure
+    raise HTTPException(status_code=401, detail="Unauthorized")
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint for monitoring."""
@@ -70,6 +78,7 @@ async def health_check():
     response_model=List[Dict[str, Any]],
 )
 async def run_scrape(  # type: ignore[override]
+    _auth: None = Depends(require_api_key),
     query: str = Query(
         ...,
         description="The search query for GMaps "

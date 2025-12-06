@@ -1,9 +1,9 @@
-
 version: '3.8'
 
 services:
   scraper-api:
-    build: . # Build the image from the Dockerfile in the current directory
+    image: sladelaskowski1/gmaps-scraper:latest # Pull prebuilt image from Docker Hub
+    platform: linux/amd64 # Ensure correct architecture on x86_64 servers
     container_name: gmaps_scraper_api_service # Optional: specify a container name
     env_file:
       - .env
@@ -12,7 +12,7 @@ services:
     restart: unless-stopped # Restart policy
     working_dir: /app # Set working directory
     networks:
-      - shark
+      - tooljetapp_tooljet-network
     # Tmpfs mounts to keep temporary files in RAM
     tmpfs:
       - /tmp:size=512M
@@ -29,7 +29,7 @@ services:
           memory: 3G
 
 # Create the external network first with:
-# docker network create shark
+# docker network create tooljetapp_tooljet-network
 networks:
-  shark:
+  tooljetapp_tooljet-network:
     external: true
